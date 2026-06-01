@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Remote Team Time-Zone Converter</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0f172a;
+      --panel: #111827;
+      --panel-soft: #1e293b;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --success: #22c55e;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --border: rgba(148, 163, 184, 0.16);
+      --shadow: 0 25px 60px rgba(15, 23, 42, 0.35);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: radial-gradient(circle at top left, rgba(56, 189, 248, 0.18), transparent 35%),
+                  radial-gradient(circle at bottom right, rgba(220, 38, 38, 0.14), transparent 28%),
+                  linear-gradient(180deg, #020617 0%, #0c1226 100%);
+      color: var(--text);
+    }
+
+    .page {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 32px 24px 48px;
+    }
+
+    header {
+      display: grid;
+      gap: 18px;
+      margin-bottom: 32px;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: clamp(2.1rem, 3vw, 3rem);
+      letter-spacing: -0.04em;
+    }
+
+    header p {
+      margin: 0;
+      max-width: 760px;
+      line-height: 1.75;
+      color: var(--muted);
+    }
+
+    .layout {
+      display: grid;
+      gap: 24px;
+      grid-template-columns: minmax(280px, 360px) 1fr;
+    }
+
+    .panel {
+      background: rgba(15, 23, 42, 0.92);
+      border: 1px solid var(--border);
+      border-radius: 28px;
+      box-shadow: var(--shadow);
+      padding: 28px;
+      backdrop-filter: blur(14px);
+    }
+
+    .panel h2 {
+      margin-top: 0;
+      margin-bottom: 12px;
+      font-size: 1.35rem;
+    }
+
+    .panel p {
+      margin-top: 0;
+      margin-bottom: 20px;
+      color: var(--muted);
+    }
+
+    .controls {
+      display: grid;
+      gap: 16px;
+    }
+
+    .control {
+      display: grid;
+      gap: 8px;
+    }
+
+    label {
+      font-size: 0.95rem;
+      color: #cbd5e1;
+    }
+
+    select,
+    input[type="date"],
+    input[type="time"] {
+      width: 100%;
+      appearance: none;
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      border-radius: 16px;
+      background: #0f172a;
+      color: var(--text);
+      padding: 14px 16px;
+      font-size: 1rem;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    select:focus,
+    input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.14);
+    }
+
+    .hint {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .switch-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 8px;
+    }
+
+    .switch {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .switch input {
+      accent-color: var(--accent);
+      width: 18px;
+      height: 18px;
+      margin: 0;
+      cursor: pointer;
+    }
+
+    .cards {
+      display: grid;
+      gap: 22px;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+
+    .card {
+      background: linear-gradient(180deg, rgba(15, 23, 42, 0.94), rgba(15, 23, 42, 0.78));
+      border: 1px solid rgba(148, 163, 184, 0.1);
+      border-radius: 24px;
+      padding: 22px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .city-name {
+      font-size: 1.1rem;
+      font-weight: 700;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 96px;
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-size: 0.83rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .badge.working {
+      background: rgba(34, 197, 94, 0.16);
+      color: #bbf7d0;
+      border: 1px solid rgba(34, 197, 94, 0.24);
+    }
+
+    .badge.late {
+      background: rgba(248, 113, 113, 0.16);
+      color: #fecaca;
+      border: 1px solid rgba(248, 113, 113, 0.24);
+    }
+
+    .badge.off {
+      background: rgba(245, 158, 11, 0.16);
+      color: #fde68a;
+      border: 1px solid rgba(245, 158, 11, 0.24);
+    }
+
+    .time-large {
+      font-size: 2.3rem;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .date-small {
+      color: var(--muted);
+      font-size: 0.94rem;
+    }
+
+    .note-box {
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(148, 163, 184, 0.16);
+      border-radius: 20px;
+      padding: 18px 20px;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+
+    .note-box strong {
+      color: var(--text);
+    }
+
+    @media (max-width: 860px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header>
+      <div>
+        <p>Remote teams rely on fast, accurate time conversions. This app lets you choose your base city and meeting time, then shows live local times for major hubs with DST-safe results.</p>
+      </div>
+      <h1>Time-Zone Converter for Remote Teams</h1>
+      <p style="margin: 0.75rem 0 0; color: #cbd5e1; font-size: 1rem;">Your current timeline is set to <strong>New Delhi / India</strong> by default.</p>
+    </header>
+
+    <div class="layout">
+      <section class="panel">
+        <h2>Control Center</h2>
+        <p>Pick your home city, meeting date, and meeting time. The team cards will update instantly for each major tech hub.</p>
+
+        <div class="controls">
+          <div class="control">
+            <label for="base-city">Your base city</label>
+            <select id="base-city" aria-label="Select your base city">
+              <option value="Asia/Kolkata" selected>New Delhi</option>
+              <option value="America/New_York">New York</option>
+              <option value="America/Los_Angeles">San Francisco</option>
+              <option value="Europe/London">London</option>
+              <option value="Asia/Tokyo">Tokyo</option>
+              <option value="Australia/Sydney">Sydney</option>
+              <option value="Europe/Berlin">Berlin</option>
+            </select>
+          </div>
+
+          <div class="control">
+            <label for="meeting-date">Meeting date</label>
+            <input id="meeting-date" type="date" />
+          </div>
+
+          <div class="control">
+            <label for="meeting-time">Meeting time</label>
+            <input id="meeting-time" type="time" />
+          </div>
+
+          <div class="switch-row">
+            <div class="hint">Remember your base city in this browser</div>
+            <label class="switch">
+              <span>Save</span>
+              <input id="remember-city" type="checkbox" checked />
+            </label>
+          </div>
+        </div>
+
+        <div class="note-box">
+          <strong>How it works:</strong> This converter uses time zone rules for each city so the clock is correct during Daylight Saving Time changes. The app now uses India / New Delhi asthe base city by default, while New York is handled automatically as EST or EDT and London switches correctly between GMT and BST.
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Team Cards</h2>
+        <p>Each card shows the local meeting time, local date, and whether the time is within normal working hours in that city.</p>
+        <div class="cards" id="city-cards"></div>
+      </section>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/luxon@3/build/global/luxon.min.js"></script>
+  <script>
+    const { DateTime } = luxon;
+
+    const targetCities = [
+      { name: 'San Francisco', zone: 'America/Los_Angeles' },
+      { name: 'New York', zone: 'America/New_York' },
+      { name: 'London', zone: 'Europe/London' },
+      { name: 'Tokyo', zone: 'Asia/Tokyo' }
+    ];
+
+    const baseCitySelect = document.getElementById('base-city');
+    const dateInput = document.getElementById('meeting-date');
+    const timeInput = document.getElementById('meeting-time');
+    const rememberCheckbox = document.getElementById('remember-city');
+    const cityCardsContainer = document.getElementById('city-cards');
+
+    const today = DateTime.now().toISODate();
+    dateInput.value = today;
+    timeInput.value = DateTime.now().toFormat('HH:mm');
+
+    function loadPreferences() {
+      const storedZone = localStorage.getItem('remote-timezone-base-zone');
+      const remember = localStorage.getItem('remote-timezone-remember') !== 'false';
+      rememberCheckbox.checked = remember;
+      if (storedZone && remember) {
+        const optionExists = Array.from(baseCitySelect.options).some(opt => opt.value === storedZone);
+        if (optionExists) {
+          baseCitySelect.value = storedZone;
+        }
+      }
+    }
+
+    function savePreferences() {
+      if (rememberCheckbox.checked) {
+        localStorage.setItem('remote-timezone-base-zone', baseCitySelect.value);
+        localStorage.setItem('remote-timezone-remember', 'true');
+      } else {
+        localStorage.setItem('remote-timezone-remember', 'false');
+      }
+    }
+
+    function createCityCard(city) {
+      const card = document.createElement('article');
+      card.className = 'card';
+      card.dataset.zone = city.zone;
+      card.innerHTML = `
+        <div class="card-header">
+          <div class="city-name">${city.name}</div>
+          <span class="badge off">Loading</span>
+        </div>
+        <div class="time-large">--:--</div>
+        <div class="date-small">--</div>
+      `;
+      cityCardsContainer.appendChild(card);
+    }
+
+    function getStatus(hour) {
+      if (hour >= 9 && hour < 17) return { label: 'Working hours', style: 'working' };
+      if (hour >= 22 || hour < 6) return { label: 'Sleeping hours', style: 'late' };
+      return { label: 'Outside working hours', style: 'off' };
+    }
+
+    function updateCards() {
+      const dateValue = dateInput.value;
+      const timeValue = timeInput.value;
+      const baseZone = baseCitySelect.value;
+
+      if (!dateValue || !timeValue) return;
+
+      const baseDateTime = DateTime.fromISO(`${dateValue}T${timeValue}`, { zone: baseZone });
+
+      targetCities.forEach(city => {
+        const card = cityCardsContainer.querySelector(`[data-zone="${city.zone}"]`);
+        if (!card) return;
+
+        const cityDateTime = baseDateTime.setZone(city.zone);
+        const formattedTime = cityDateTime.toFormat('h:mm a');
+        const formattedDate = cityDateTime.toFormat('EEE, MMM d');
+        const status = getStatus(cityDateTime.hour);
+
+        card.querySelector('.time-large').textContent = formattedTime;
+        card.querySelector('.date-small').textContent = formattedDate;
+        const badge = card.querySelector('.badge');
+        badge.textContent = status.label;
+        badge.className = `badge ${status.style}`;
+      });
+    }
+
+    function init() {
+      targetCities.forEach(createCityCard);
+      loadPreferences();
+      updateCards();
+
+      baseCitySelect.addEventListener('change', () => {
+        updateCards();
+        savePreferences();
+      });
+      dateInput.addEventListener('change', updateCards);
+      timeInput.addEventListener('change', updateCards);
+      rememberCheckbox.addEventListener('change', savePreferences);
+    }
+
+    init();
+  </script>
+</body>
+</html>
